@@ -18,6 +18,6 @@ export async function getMovimientosByProducto(productoId: number): Promise<Movi
   const db = await getDatabase();
   return db.getAllAsync<Movimiento>(
     'SELECT * FROM movimientos WHERE producto_id = ? ORDER BY fecha DESC, id DESC',
-    [productoId]
+    productoId
   );
 }

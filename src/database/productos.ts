@@ -28,7 +28,7 @@ export async function getAllProductos(categoria?: string, busqueda?: string): Pr
 
 export async function getProductoById(id: number): Promise<Producto | null> {
   const db = await getDatabase();
-  return db.getFirstAsync<Producto>('SELECT * FROM productos WHERE id = ?', [id]);
+  return db.getFirstAsync<Producto>('SELECT * FROM productos WHERE id = ?', id);
 }
 
 export async function insertProducto(producto: Omit<Producto, 'id' | 'created_at'>): Promise<number> {
@@ -52,7 +52,7 @@ export async function updateProducto(id: number, producto: Omit<Producto, 'id' |
 
 export async function setStock(id: number, nuevoStock: number): Promise<void> {
   const db = await getDatabase();
-  const producto = await db.getFirstAsync<Producto>('SELECT * FROM productos WHERE id = ?', [id]);
+  const producto = await db.getFirstAsync<Producto>('SELECT * FROM productos WHERE id = ?', id);
   if (!producto) return;
 
   const diferencia = nuevoStock - producto.stock;
@@ -64,5 +64,7 @@ export async function setStock(id: number, nuevoStock: number): Promise<void> {
 
 export async function deleteProducto(id: number): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM productos WHERE id = ?', [id]);
+  // Eliminar movimientos primero para evitar problemas de FK
+  await db.runAsync('DELETE FROM movimientos WHERE producto_id = ?', id);
+  await db.runAsync('DELETE FROM productos WHERE id = ?', id);
 }
