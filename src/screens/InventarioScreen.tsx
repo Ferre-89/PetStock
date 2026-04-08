@@ -61,14 +61,13 @@ export default function InventarioScreen({ navigation }: Props) {
     setToastVisible(true);
   };
 
-  const cargarProductos = useCallback(async () => {
-    const data = await getAllProductos(categoriaActiva, busqueda);
-    setProductos(data);
+  const cargarProductos = useCallback(() => {
+    setProductos(getAllProductos(categoriaActiva, busqueda));
   }, [categoriaActiva, busqueda]);
 
   const recargarTodo = useCallback(() => {
     cargarProductos();
-    getTotalAlertas().then(setAlertCount);
+    setAlertCount(getTotalAlertas());
   }, [cargarProductos]);
 
   useFocusEffect(

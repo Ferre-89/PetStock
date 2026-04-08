@@ -20,7 +20,7 @@ export default function AppNavigator() {
   const [alertCount, setAlertCount] = useState(0);
 
   const refreshAlertCount = useCallback(() => {
-    getTotalAlertas().then(setAlertCount);
+    setAlertCount(getTotalAlertas());
   }, []);
 
   return (

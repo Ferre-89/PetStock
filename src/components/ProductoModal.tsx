@@ -84,8 +84,8 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
     setFechaIso(null);
   };
 
-  const cargarDatos = async (id: number) => {
-    const p = await getProductoById(id);
+  const cargarDatos = (id: number) => {
+    const p = getProductoById(id);
     if (!p) return;
     setNombre(p.nombre);
     setMarca(p.marca);
@@ -108,7 +108,7 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
     setFechaIso(masked.length === 10 ? validarFecha(masked) : null);
   };
 
-  const guardar = async () => {
+  const guardar = () => {
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre es obligatorio');
       return;
@@ -124,36 +124,30 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
       fecha_vencimiento: categoria === 'comida' ? fechaIso : null,
     };
 
-    setGuardando(true);
     try {
       if (productoId) {
-        await updateProducto(productoId, data);
+        updateProducto(productoId, data);
       } else {
-        await insertProducto(data);
+        insertProducto(data);
       }
       onClose();
       onSaved(productoId ? 'updated' : 'created');
     } catch (e: any) {
       console.error('Error guardando producto:', e);
       Alert.alert('Error', e?.message ?? 'No se pudo guardar');
-    } finally {
-      setGuardando(false);
     }
   };
 
-  const ejecutarEliminar = async () => {
+  const ejecutarEliminar = () => {
     if (!productoId) return;
-    setEliminando(true);
     try {
-      await deleteProducto(productoId);
+      deleteProducto(productoId);
       setConfirmDeleteVisible(false);
       onClose();
       onSaved('deleted');
     } catch (e: any) {
       console.error('Error eliminando producto:', e);
       Alert.alert('Error', e?.message ?? 'No se pudo eliminar');
-    } finally {
-      setEliminando(false);
     }
   };
 

@@ -22,8 +22,8 @@ export default function AlertasScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getAlertasStockBajo().then(setStockBajo);
-      getAlertasVencimiento().then(setVencimientos);
+      setStockBajo(getAlertasStockBajo());
+      setVencimientos(getAlertasVencimiento());
     }, [])
   );
 
