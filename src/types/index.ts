@@ -42,6 +42,29 @@ export interface AlertaVencimiento {
 
 export type Categoria = 'comida' | 'juguetes' | 'medicamentos' | 'collares' | 'accesorios';
 
+export interface Proveedor {
+  id: number;
+  nombre: string;
+  telefono: string;
+  email: string;
+  notas: string;
+  created_at: string;
+}
+
+export interface ProveedorConProductos extends Proveedor {
+  cantidad_productos: number;
+}
+
+export interface ProductoProveedor {
+  id: number;
+  producto_id: number;
+  proveedor_id: number;
+  precio_costo: number;
+  producto_nombre: string;
+  producto_marca: string;
+  producto_categoria: string;
+}
+
 export type InventarioStackParamList = {
   InventarioList: undefined;
 };

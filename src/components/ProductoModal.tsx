@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { CATEGORIAS } from '../constants/categorias';
 import { deleteProducto, getProductoById, insertProducto, updateProducto } from '../database/productos';
-import { Categoria } from '../types';
+import { asociarProducto, desasociarProducto, getAllProveedores, getProveedoresByProducto, type ProveedorDeProducto } from '../database/proveedores';
+import { Categoria, ProveedorConProductos } from '../types';
 
 const CATEGORIAS_SELECCIONABLES = CATEGORIAS.filter(c => c.key !== 'todos');
 
@@ -64,6 +65,13 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [eliminando, setEliminando] = useState(false);
 
+  // Proveedores (solo modo edición)
+  const [proveedores, setProveedores] = useState<ProveedorDeProducto[]>([]);
+  const [provSelectorVisible, setProvSelectorVisible] = useState(false);
+  const [provDisponibles, setProvDisponibles] = useState<ProveedorConProductos[]>([]);
+  const [provSelected, setProvSelected] = useState<number | null>(null);
+  const [provPrecio, setProvPrecio] = useState('');
+
   useEffect(() => {
     if (!visible) return;
     if (productoId) {
@@ -82,6 +90,7 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
     setStockMinimo('');
     setFechaTexto('');
     setFechaIso(null);
+    setProveedores([]);
   };
 
   const cargarDatos = (id: number) => {
@@ -100,6 +109,7 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
       setFechaTexto('');
       setFechaIso(null);
     }
+    setProveedores(getProveedoresByProducto(id));
   };
 
   const manejarCambioFecha = (texto: string) => {
@@ -136,6 +146,29 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
       console.error('Error guardando producto:', e);
       Alert.alert('Error', e?.message ?? 'No se pudo guardar');
     }
+  };
+
+  // --- Proveedores ---
+  const abrirProvSelector = () => {
+    const todos = getAllProveedores();
+    const idsAsociados = new Set(proveedores.map(p => p.proveedor_id));
+    setProvDisponibles(todos.filter(p => !idsAsociados.has(p.id)));
+    setProvSelected(null);
+    setProvPrecio('');
+    setProvSelectorVisible(true);
+  };
+
+  const confirmarAsociarProv = () => {
+    if (!productoId || !provSelected) return;
+    asociarProducto(provSelected, productoId, parseFloat(provPrecio) || 0);
+    setProvSelectorVisible(false);
+    setProveedores(getProveedoresByProducto(productoId));
+  };
+
+  const quitarProveedor = (provId: number) => {
+    if (!productoId) return;
+    desasociarProducto(provId, productoId);
+    setProveedores(getProveedoresByProducto(productoId));
   };
 
   const ejecutarEliminar = () => {
@@ -242,12 +275,77 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
                 </Pressable>
               </View>
 
+              {/* Sección proveedores (solo edición) */}
+              {isEditing && (
+                <>
+                  <Text style={[styles.label, { marginTop: 20, fontSize: 15, fontWeight: '700', color: '#1a1f2e' }]}>Proveedores</Text>
+                  {proveedores.length > 0 ? (
+                    <View style={styles.provList}>
+                      {proveedores.map(pv => (
+                        <View key={pv.proveedor_id} style={styles.provChip}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.provChipNombre}>{pv.proveedor_nombre}</Text>
+                            <Text style={styles.provChipPrecio}>${pv.precio_costo.toFixed(2)}</Text>
+                          </View>
+                          <Pressable onPress={() => quitarProveedor(pv.proveedor_id)} style={styles.provChipRemove}>
+                            <Text style={styles.provChipRemoveText}>✕</Text>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={{ fontSize: 13, color: '#999', marginBottom: 8 }}>Sin proveedores asociados</Text>
+                  )}
+                  <Pressable style={styles.provAddBtn} onPress={abrirProvSelector}>
+                    <Text style={styles.provAddBtnText}>+ Agregar proveedor</Text>
+                  </Pressable>
+                </>
+              )}
+
               {isEditing && (
                 <Pressable style={styles.deleteBtn} onPress={() => setConfirmDeleteVisible(true)}>
                   <Text style={styles.deleteBtnText}>Eliminar producto</Text>
                 </Pressable>
               )}
             </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Modal selector proveedor */}
+      <Modal visible={provSelectorVisible} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => setProvSelectorVisible(false)}>
+          <Pressable style={styles.provSelectorContent} onPress={() => {}}>
+            <Text style={styles.title}>Agregar proveedor</Text>
+            {provDisponibles.length === 0 ? (
+              <Text style={{ fontSize: 13, color: '#999', textAlign: 'center', paddingVertical: 20 }}>No hay proveedores disponibles</Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 200, marginTop: 8 }}>
+                {provDisponibles.map(p => (
+                  <Pressable
+                    key={p.id}
+                    style={[styles.provSelectorItem, provSelected === p.id && styles.provSelectorItemSelected]}
+                    onPress={() => setProvSelected(p.id)}
+                  >
+                    <Text style={[styles.provSelectorText, provSelected === p.id && { color: '#1d9e75' }]}>{p.nombre}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+            {provSelected && (
+              <>
+                <Text style={styles.label}>Precio de costo ($)</Text>
+                <TextInput style={styles.input} value={provPrecio} onChangeText={setProvPrecio} keyboardType="decimal-pad" placeholder="0.00" />
+              </>
+            )}
+            <View style={styles.actions}>
+              <Pressable style={styles.cancelBtn} onPress={() => setProvSelectorVisible(false)}>
+                <Text style={styles.cancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable style={[styles.confirmBtn, !provSelected && { opacity: 0.5 }]} onPress={confirmarAsociarProv} disabled={!provSelected}>
+                <Text style={styles.confirmText}>Asociar</Text>
+              </Pressable>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -308,6 +406,20 @@ const styles = StyleSheet.create({
   cancelText: { fontSize: 15, fontWeight: '600', color: '#555' },
   confirmBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center', backgroundColor: '#1d9e75' },
   confirmText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  // Proveedores
+  provList: { gap: 6, marginBottom: 8 },
+  provChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f4f5f7', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
+  provChipNombre: { fontSize: 13, fontWeight: '600', color: '#1a1f2e' },
+  provChipPrecio: { fontSize: 12, color: '#1d9e75', fontWeight: '700' },
+  provChipRemove: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#f8d7da', alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  provChipRemoveText: { fontSize: 12, fontWeight: '700', color: '#e24b4a' },
+  provAddBtn: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5, borderColor: '#1d9e75', borderStyle: 'dashed' },
+  provAddBtnText: { fontSize: 13, fontWeight: '700', color: '#1d9e75' },
+  provSelectorContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 420, maxHeight: '80%' },
+  provSelectorItem: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, marginBottom: 4, backgroundColor: '#f4f5f7' },
+  provSelectorItemSelected: { backgroundColor: '#e1f5ee', borderWidth: 1.5, borderColor: '#1d9e75' },
+  provSelectorText: { fontSize: 14, fontWeight: '600', color: '#1a1f2e' },
+
   deleteBtn: { marginTop: 16, borderRadius: 12, paddingVertical: 14, alignItems: 'center', backgroundColor: '#f8d7da' },
   deleteBtnText: { fontSize: 14, fontWeight: '700', color: '#e24b4a' },
 

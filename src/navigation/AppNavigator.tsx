@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getTotalAlertas } from '../database/alertas';
 import InventarioStack from './InventarioStack';
 import AlertasScreen from '../screens/AlertasScreen';
-import ExportarScreen from '../screens/ExportarScreen';
+import ProveedoresScreen from '../screens/ProveedoresScreen';
 import ConfigScreen from '../screens/ConfigScreen';
 
 const Tab = createBottomTabNavigator();
@@ -12,7 +12,7 @@ const Tab = createBottomTabNavigator();
 const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Inventario: 'cube-outline',
   Alertas: 'alert-circle-outline',
-  Exportar: 'download-outline',
+  Proveedores: 'cube-outline',
   Config: 'settings-outline',
 };
 
@@ -64,7 +64,7 @@ export default function AppNavigator() {
           },
         }}
       />
-      <Tab.Screen name="Exportar" component={ExportarScreen} />
+      <Tab.Screen name="Proveedores" component={ProveedoresScreen} />
       <Tab.Screen name="Config" component={ConfigScreen} />
     </Tab.Navigator>
   );

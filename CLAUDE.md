@@ -5,8 +5,7 @@ App de gestión de inventario para pet shop.
 ## Stack
 
 - React Native 0.81 + Expo SDK 54 (TypeScript)
-- expo-sqlite 16 (SQLite local)
-- expo-file-system + expo-sharing (exportación)
+- expo-sqlite 16 (SQLite local, API sincrónica)
 - React Navigation 7 (bottom tabs + native stack)
 - @expo/vector-icons (Ionicons)
 
@@ -17,17 +16,19 @@ App de gestión de inventario para pet shop.
   /screens/           — Pantallas
     InventarioScreen    — Topbar blanca, grid 2 columnas, chips categoría, FAB, ProductoModal
     AlertasScreen       — Topbar blanca, secciones stock bajo + vencimientos
-    ExportarScreen      — (placeholder)
+    ProveedoresScreen   — Lista proveedores accordion colapsable, selector inline de productos, FAB
     ConfigScreen        — (placeholder)
   /components/        — Componentes reutilizables
-    Toast               — Toast animado (Animated.View), aparece abajo, 2s, sin librerías externas
-    ProductoModal       — Modal unificado agregar/editar. Layout: nombre, marca, categoría (chips), precio+stock (fila), stock mínimo+vencimiento (fila). Inputs borderRadius 12. Vencimiento solo editable si categoría=comida, sino "N/A". Botón eliminar rojo en modo edición con modal de confirmación custom (no Alert nativo).
+    Toast               — Toast animado (Animated.View), 2s, sin librerías externas
+    ProductoModal       — Modal unificado agregar/editar producto. En modo edición: sección Proveedores con chips (nombre+precio), asociar/desasociar, y botón eliminar
+    ProveedorModal      — Modal unificado agregar/editar proveedor con confirmación de eliminación
   /constants/         — Constantes (categorías, colores)
-  /database/          — Lógica SQLite
-    schema.ts           — Inicialización DB y tablas (PRAGMAs separados)
-    productos.ts        — CRUD (getAllProductos, getProductoById, insertProducto, updateProducto, setStock, deleteProducto)
-    movimientos.ts      — Queries movimientos (insertMovimiento, getMovimientosByProducto) — sin pantalla visible, solo registro en DB
-    alertas.ts          — Queries alertas (getAlertasStockBajo, getAlertasVencimiento, getTotalAlertas)
+  /database/          — Lógica SQLite (API sync)
+    schema.ts           — Inicialización DB y tablas
+    productos.ts        — CRUD productos
+    proveedores.ts      — CRUD proveedores + asociación producto-proveedor
+    movimientos.ts      — Registro de movimientos (sin UI)
+    alertas.ts          — Queries alertas
   /navigation/        — Navegadores
     AppNavigator        — Bottom tabs (4 tabs)
     InventarioStack     — Stack: solo InventarioList
@@ -37,15 +38,10 @@ App de gestión de inventario para pet shop.
 ## Navegación
 
 Bottom tabs con 4 tabs:
-1. **Inventario** — Lista de productos. Todo el ABM via ProductoModal.
-2. **Alertas** — Stock bajo y vencimientos próximos (badge dinámico en tab)
-3. **Exportar** — (placeholder)
+1. **Inventario** — Lista de productos. ABM via ProductoModal.
+2. **Alertas** — Stock bajo y vencimientos próximos (badge dinámico)
+3. **Proveedores** — Lista de proveedores. ABM via ProveedorModal. Detalle via ProveedorDetalleModal.
 4. **Config** — (placeholder)
-
-Flujo principal:
-- Tocar card → abre ProductoModal en modo edición
-- Tocar lápiz ✏️ en card → abre ProductoModal en modo edición
-- FAB (+) → abre ProductoModal en modo agregar
 
 ## Schema SQLite
 
@@ -54,18 +50,20 @@ Base de datos: `petstock.db`
 ```sql
 productos (id, nombre, marca, categoria, precio, stock, stock_minimo, fecha_vencimiento, created_at)
 movimientos (id, producto_id, tipo[entrada|salida|ajuste], cantidad, fecha, nota)
+proveedores (id, nombre, telefono, email, notas, created_at)
+producto_proveedor (id, producto_id, proveedor_id, precio_costo) — UNIQUE(producto_id, proveedor_id)
 ```
 
-- Sin tabla de variantes (decisión MVP)
-- Sin pantalla de movimientos (tabla existe para registro, sin UI)
-- PRAGMAs separados (journal_mode WAL, foreign_keys ON)
-- ON DELETE CASCADE en FK de movimientos
+- API sincrónica (openDatabaseSync, execSync, runSync, getAllSync, getFirstSync)
+- PRAGMAs: journal_mode WAL, foreign_keys ON
+- ON DELETE CASCADE en todas las FK
+- Migración automática de schema viejo al abrir
 
 ## Colores
 
 | Uso | Color |
 |-----|-------|
-| Fondo topbar Inventario/Alertas | `#fff` (blanco) |
+| Fondo topbar | `#fff` (blanco) |
 | Fondo bottom nav | `#1a1f2e` |
 | Acento verde | `#1d9e75` |
 | Fondo pantalla | `#f4f5f7` |
@@ -85,28 +83,36 @@ movimientos (id, producto_id, tipo[entrada|salida|ajuste], cantidad, fecha, nota
 
 ## Lógica de Stock
 
-- `stock`: campo directo en la tabla productos
+- `stock`: campo directo en productos
 - **OK**: stock > stock_minimo → badge verde
 - **Bajo**: 0 < stock <= stock_minimo → badge amarillo
 - **Crítico**: stock <= 0 → badge rojo
-- Fecha de vencimiento: solo editable si categoría = comida (TextInput con máscara DD/MM/AAAA)
-- `setStock(id, nuevoStock)` calcula diferencia y registra movimiento "ajuste" automáticamente
+- Fecha de vencimiento: solo editable si categoría = comida
 
 ## Lógica de Alertas
 
 - **Stock bajo**: producto con `stock <= stock_minimo`
 - **Próximo a vencer**: producto con `fecha_vencimiento` dentro de 30 días y stock > 0
-- **Badge topbar**: total alertas vía `getTotalAlertas()`, actualiza en cada focus
-- **Badge tab**: `tabBarBadge` dinámico vía `screenListeners.state`
+- **Badge topbar + tab**: dinámico vía `getTotalAlertas()`
+
+## Proveedores
+
+- CRUD completo: agregar, editar, eliminar proveedores
+- Asociación producto-proveedor con precio de costo
+- `producto_proveedor` con UNIQUE constraint para evitar duplicados
+- Modal detalle muestra info del proveedor + lista de productos con precio de costo
+- Selector de productos disponibles (excluye ya asociados) al asociar
+- Cards accordion: colapsadas muestran nombre/teléfono/cantidad + flecha ▼. Expandidas muestran productos con emoji+precio+botón ✕
+- Solo un accordion expandido a la vez
+- Selector de productos inline dentro del accordion (sin modal separado)
+- Relación bidireccional: desde ProductoModal se ven/agregan proveedores, desde accordion se ven/agregan productos
 
 ## Decisiones de Arquitectura
 
+- **API sincrónica**: expo-sqlite sync API para evitar NullPointerException en Expo Go Android
 - **Sin variantes (MVP)**: Stock directo en producto
-- **Sin pantalla de detalle ni de agregar**: Todo vía ProductoModal unificado
-- **Sin pantalla de movimientos**: Tabla existe para auditoría, sin UI por ahora
-- **ProductoModal unificado**: productoId=null → agregar, number → editar. Eliminar con modal de confirmación custom. `onSaved(action)` retorna `'created' | 'updated' | 'deleted'` para que el parent muestre toasts
-- **Toasts de feedback**: Verde para agregar/editar, rojo para eliminar. Componente Toast con Animated, 2s duración, sin librerías externas
-- **Sin ORM**: Queries directas con expo-sqlite, params variadic
-- **PRAGMAs separados**: Cada PRAGMA como execAsync individual
+- **Todo via modales**: ProductoModal, ProveedorModal, ProveedorDetalleModal — sin pantallas separadas de detalle/agregar
+- **Toasts de feedback**: Verde para agregar/editar, rojo para eliminar
+- **Modal de confirmación custom**: Para eliminar (no Alert nativo — falla sobre Modal en Android)
 - **Singleton DB**: `getDatabase()` retorna siempre la misma instancia
-- **Cards grid 2x2**: `FlatList numColumns={2}` con `maxWidth: '48.5%'`
+- **Cards grid 2x2**: Para productos. Lista vertical para proveedores.

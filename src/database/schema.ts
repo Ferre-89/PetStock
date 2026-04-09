@@ -55,5 +55,28 @@ export function getDatabase(): SQLiteDatabase {
     );
   `);
 
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS proveedores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nombre TEXT NOT NULL,
+      telefono TEXT NOT NULL DEFAULT '',
+      email TEXT NOT NULL DEFAULT '',
+      notas TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS producto_proveedor (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      producto_id INTEGER NOT NULL,
+      proveedor_id INTEGER NOT NULL,
+      precio_costo REAL NOT NULL DEFAULT 0,
+      FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+      FOREIGN KEY (proveedor_id) REFERENCES proveedores(id) ON DELETE CASCADE,
+      UNIQUE(producto_id, proveedor_id)
+    );
+  `);
+
   return db;
 }
