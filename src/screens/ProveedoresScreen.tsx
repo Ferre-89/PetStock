@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProveedorModal, { SaveAction } from '../components/ProveedorModal';
 import Toast from '../components/Toast';
 import { getCategoriaInfo } from '../constants/categorias';
@@ -22,6 +23,7 @@ const TOAST_MESSAGES: Record<SaveAction, { message: string; color: string }> = {
 };
 
 export default function ProveedoresScreen() {
+  const insets = useSafeAreaInsets();
   const [proveedores, setProveedores] = useState<ProveedorConProductos[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
@@ -106,7 +108,7 @@ export default function ProveedoresScreen() {
   return (
     <View style={styles.container}>
       {/* Topbar */}
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.top + 12 }]}>
         <View style={styles.topbarLeft}>
           <Text style={styles.logoIcon}>📦</Text>
           <Text style={styles.logoText}>PetStock</Text>
@@ -266,7 +268,7 @@ export default function ProveedoresScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f4f5f7' },
 
-  topbar: { backgroundColor: '#fff', paddingTop: 50, paddingBottom: 12, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  topbar: { backgroundColor: '#fff', paddingBottom: 12, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   topbarLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoIcon: { fontSize: 22 },
   logoText: { fontSize: 20, fontWeight: '800', color: '#1a1f2e' },

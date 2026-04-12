@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -187,12 +189,13 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
   return (
     <>
       <Modal visible={visible} transparent animationType="fade">
+        <KeyboardAvoidingView style={styles.kavContainer} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Pressable style={styles.overlay} onPress={onClose}>
           <Pressable style={styles.content} onPress={() => {}}>
             <Pressable style={styles.closeBtn} onPress={onClose}>
               <Text style={styles.closeBtnText}>✕</Text>
             </Pressable>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.title}>{isEditing ? 'Editar producto' : 'Nuevo producto'}</Text>
 
               <Text style={styles.label}>Nombre *</Text>
@@ -310,6 +313,7 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
             </ScrollView>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Modal selector proveedor */}
@@ -383,6 +387,7 @@ export default function ProductoModal({ productoId, visible, onClose, onSaved }:
 
 const styles = StyleSheet.create({
   // Modal principal
+  kavContainer: { flex: 1 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   content: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 420, maxHeight: '85%', position: 'relative' },
   closeBtn: { position: 'absolute', top: 16, right: 16, zIndex: 10, padding: 4 },

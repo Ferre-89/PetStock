@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCategoriaInfo } from '../constants/categorias';
 import { getAlertasStockBajo, getAlertasVencimiento } from '../database/alertas';
 import { AlertaStock, AlertaVencimiento } from '../types';
@@ -16,6 +17,7 @@ type AlertaItem =
   | { type: 'vencimiento'; data: AlertaVencimiento };
 
 export default function AlertasScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const [stockBajo, setStockBajo] = useState<AlertaStock[]>([]);
   const [vencimientos, setVencimientos] = useState<AlertaVencimiento[]>([]);
@@ -53,7 +55,7 @@ export default function AlertasScreen() {
   return (
     <View style={styles.container}>
       {/* Topbar blanca */}
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.logoIcon}>🔔</Text>
         <Text style={styles.logoText}>PetStock</Text>
       </View>
@@ -153,7 +155,6 @@ const styles = StyleSheet.create({
   },
   topbar: {
     backgroundColor: '#fff',
-    paddingTop: 50,
     paddingBottom: 12,
     paddingHorizontal: 20,
     flexDirection: 'row',

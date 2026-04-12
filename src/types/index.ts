@@ -40,7 +40,7 @@ export interface AlertaVencimiento {
   categoria: string;
 }
 
-export type Categoria = 'comida' | 'juguetes' | 'medicamentos' | 'collares' | 'accesorios';
+export type Categoria = 'comida' | 'juguetes' | 'medicamentos' | 'collares' | 'accesorios' | 'otros';
 
 export interface Proveedor {
   id: number;

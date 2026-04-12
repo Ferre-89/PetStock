@@ -14,6 +14,7 @@ export const CATEGORIAS: CategoriaInfo[] = [
   { key: 'medicamentos', label: 'Medicamentos', emoji: '💊', color: '#faece7' },
   { key: 'collares', label: 'Collares', emoji: '🦮', color: '#fbeaf0' },
   { key: 'accesorios', label: 'Accesorios', emoji: '✨', color: '#e6f1fb' },
+  { key: 'otros', label: 'Otros', emoji: '📦', color: '#f1efe8' },
 ];
 
 export function getCategoriaInfo(key: string): CategoriaInfo {

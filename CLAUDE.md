@@ -8,6 +8,10 @@ App de gestión de inventario para pet shop.
 - expo-sqlite 16 (SQLite local, API sincrónica)
 - React Navigation 7 (bottom tabs + native stack)
 - @expo/vector-icons (Ionicons)
+- @react-native-async-storage/async-storage (persistencia clave-valor)
+- xlsx + expo-file-system + expo-sharing (exportar Excel)
+- expo-splash-screen + expo-navigation-bar (splash animada, edge-to-edge Android)
+- react-native-safe-area-context (SafeAreaProvider)
 
 ## Estructura de Carpetas
 
@@ -17,10 +21,10 @@ App de gestión de inventario para pet shop.
     InventarioScreen    — Topbar blanca, grid 2 columnas, chips categoría, FAB, ProductoModal
     AlertasScreen       — Topbar blanca, secciones stock bajo + vencimientos
     ProveedoresScreen   — Lista proveedores accordion colapsable, selector inline de productos, FAB
-    ConfigScreen        — (placeholder)
+    ConfigScreen        — Nombre negocio (AsyncStorage), exportar Excel (xlsx + expo-sharing), acerca de
   /components/        — Componentes reutilizables
     Toast               — Toast animado (Animated.View), 2s, sin librerías externas
-    ProductoModal       — Modal unificado agregar/editar producto. En modo edición: sección Proveedores con chips (nombre+precio), asociar/desasociar, y botón eliminar
+    ProductoModal       — Modal unificado agregar/editar producto. KeyboardAvoidingView + ScrollView scrolleable. En modo edición: sección Proveedores con chips (nombre+precio), asociar/desasociar, y botón eliminar
     ProveedorModal      — Modal unificado agregar/editar proveedor con confirmación de eliminación
   /constants/         — Constantes (categorías, colores)
   /database/          — Lógica SQLite (API sync)
@@ -41,7 +45,7 @@ Bottom tabs con 4 tabs:
 1. **Inventario** — Lista de productos. ABM via ProductoModal.
 2. **Alertas** — Stock bajo y vencimientos próximos (badge dinámico)
 3. **Proveedores** — Lista de proveedores. ABM via ProveedorModal. Detalle via ProveedorDetalleModal.
-4. **Config** — (placeholder)
+4. **Config** — Nombre negocio, exportar inventario/proveedores a Excel, acerca de
 
 ## Schema SQLite
 
@@ -80,6 +84,7 @@ producto_proveedor (id, producto_id, proveedor_id, precio_costo) — UNIQUE(prod
 | Medicamentos | `#faece7` | 💊 |
 | Collares | `#fbeaf0` | 🦮 |
 | Accesorios | `#e6f1fb` | ✨ |
+| Otros | `#f1efe8` | 📦 |
 
 ## Lógica de Stock
 
@@ -106,6 +111,40 @@ producto_proveedor (id, producto_id, proveedor_id, precio_costo) — UNIQUE(prod
 - Solo un accordion expandido a la vez
 - Selector de productos inline dentro del accordion (sin modal separado)
 - Relación bidireccional: desde ProductoModal se ven/agregan proveedores, desde accordion se ven/agregan productos
+
+## Configuración
+
+- **Nombre del negocio**: guardado en AsyncStorage (`petstock_nombre_negocio`), usado solo como encabezado en archivos exportados. Topbar siempre muestra "PetStock" hardcodeado
+- **Exportar inventario**: genera .xlsx con columnas Nombre, Marca, Categoría, Precio, Stock, Stock mínimo, Fecha vencimiento
+- **Exportar proveedores**: genera .xlsx con columnas Proveedor, Teléfono, Email, Producto, Precio de costo
+- Exportación usa `xlsx` para generar el archivo y `expo-sharing` para compartir (WhatsApp, email, Drive, etc.)
+- Cada botón de exportar tiene loading independiente
+- **Acerca de**: PetStock + versión 1.0.0
+
+## EAS Build
+
+- **Package / Bundle ID**: `com.roferreiradev.petstock` (Android e iOS)
+- Perfiles en `eas.json`: `development` (dev client, internal), `preview` (APK, internal), `production`
+
+## Splash Screen Animada
+
+- `expo-splash-screen.preventAutoHideAsync()` mantiene splash nativa hasta que la app esté lista
+- Overlay animado sobre la app con fondo `#1a1f2e`:
+  - Logo `adaptive-icon.png` 120x120 con spring scale (0.3→1.0) + fade in (600ms)
+  - Título "PetStock" y subtítulo "Gestión de inventario" con fade in (400ms, delay 300ms)
+  - Espera 800ms adicionales, luego fade out (400ms) y se desmonta
+- Android edge-to-edge: `expo-navigation-bar` con color `#1a1f2e`
+- `SafeAreaProvider` wrappea toda la app en App.tsx
+- Todas las pantallas usan `useSafeAreaInsets()` para `paddingTop` dinámico en topbar (no hardcodeado)
+- Bottom tab bar respeta safe area de iOS automáticamente (sin height fija)
+
+## Branding / Assets
+
+- **Icon iOS**: `./assets/icon.png`
+- **Icon Android**: `./assets/icon-android.png`
+- **Adaptive icon**: `./assets/icon-android.png` (foreground) con fondo `#ffffff`
+- **Splash nativo**: `./assets/splash-blank.png` (1x1 sólido `#1a1f2e`), resizeMode native — fondo liso sin logo para transición imperceptible al splash animado de RN
+- **backgroundColor general**: `#1a1f2e`
 
 ## Decisiones de Arquitectura
 

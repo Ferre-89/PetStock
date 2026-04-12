@@ -35,9 +35,7 @@ export default function AppNavigator() {
         tabBarStyle: {
           backgroundColor: '#1a1f2e',
           borderTopWidth: 0,
-          paddingBottom: 8,
           paddingTop: 8,
-          height: 60,
         },
         tabBarLabelStyle: {
           fontSize: 11,
